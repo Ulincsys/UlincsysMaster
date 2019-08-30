@@ -59,11 +59,19 @@ public class Node {
 	public boolean isStr() {
 		return (data instanceof String);
 	}
+	
+	public boolean isType(Object test) {
+		return (test.getClass() == data.getClass());
+	}
 
 	/**
 	* Returns the internal reflective Class of (Object)data. O(n)
 	*/
 	public Class<? extends Object> getType() {
-		return data.getClass();
+		try {
+			return data.getClass();
+		} catch(Exception e) {
+			return null;
+		}
 	}
 }

@@ -333,40 +333,66 @@ public class Plist {
 		System.out.println();
 		restore();
 	}
+	
+	/**
+	* Prints formatted string representations of each item separated by brackets. O(n)
+	*/
+	public void read(int breakLn) {
+		int willBreak = 0;
+		rewind();
+		System.out.println("Plist with " + len + " items:");
+		do {
+			System.out.print("[ " + cursor.toString() + " ] ");
+			if((++willBreak % breakLn) == 0) {
+				System.out.println();
+			}
+		} while(next() != null);
+
+		System.out.println();
+		restore();
+	}
 
 	public void sortInts() {
 		ArrayList<Object> sorted = removeType(Integer.class);
-		Collections.sort(sorted, new compareInts());
-		
+		sorted.sort(new compareInts());
 		addList(sorted);
 	}
 
-	public void sortStrings() {
-
+	public void sortAlpha() {
+		ArrayList<Object> sorted = removeType(String.class);
+		sorted.sort(new compareStrings());
+		addList(sorted);
 	}
 
-	public void sortAsString() {
-
+	public void sortType(Class<? extends Object> typ, Comparator<? super Object> c) {
+		ArrayList<Object> sorted = removeType(typ);
+		sorted.sort(c);
+		addList(sorted);
 	}
-
-	public ArrayList removeType(Class<? extends Object> typ) {
+	
+	/** Removes all Objects of a given type from the list and returns an 
+	 * ArrayList populated with the items.
+	 * @param typ The class used to determine what Objects are removable.
+	 * @apiNote Does not test superclass, must match exactly.*/
+	public ArrayList<Object> removeType(Class<? extends Object> typ) {
 		if(len == 0) {
 			return null;
 		}
 		
 		ArrayList<Object> removed = new ArrayList<Object>();
 		rewind();
-		do {
+		while(cursor != tail) {
 			if(cursor.getType() == typ) {
 				removed.add(cursor.data);
 				stripNode(cursor);
+				--len;
 			} else {
-				next();
+				cursor = cursor.next;
 			}
-		} while(hasNext());
+		}
 		
 		restore();
-		return null;
+		return removed;
 	}
 }
 
@@ -377,9 +403,24 @@ class compareInts implements Comparator<Object> {
 	public int compare(Object a, Object b) {
 		if(Int(a) > Int(b)) {
 			return 1;
-		} else if(Int(a) > Int(b)) {
+		} else if(Int(a) < Int(b)) {
 			return -1;
 		}
 		return 0;
 	}
 }
+
+class compareStrings implements Comparator<Object> {
+	public int compare(Object a, Object b) {
+		return Str(a).compareToIgnoreCase(Str(b));
+	}
+}
+
+
+
+
+
+
+
+
+
