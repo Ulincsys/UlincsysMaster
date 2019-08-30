@@ -321,21 +321,17 @@ public class Plist {
 	}
 	
 	/**
-	* Prints formatted string representations of each item separated by brackets. O(n)
+	* Prints formatted string representations of each item separated by brackets. 
+	* Inserts newlines at Integer.MAX_VALUE. O(n)
 	*/
 	public void read() {
-		rewind();
-		System.out.println("Plist with " + len + " items:");
-		do {
-			System.out.print("[ " + cursor.toString() + " ] ");
-		} while(next() != null);
-
-		System.out.println();
-		restore();
+		read(Integer.MAX_VALUE);
 	}
 	
 	/**
-	* Prints formatted string representations of each item separated by brackets. O(n)
+	* Prints formatted string representations of each item separated by brackets.
+	* Inserts newlines at the given length. O(n)
+	* @param breakLn Gives the length at which to insert newlines.
 	*/
 	public void read(int breakLn) {
 		int willBreak = 0;
@@ -351,19 +347,36 @@ public class Plist {
 		System.out.println();
 		restore();
 	}
-
+	
+	/** Extracts all Objects of type Integer from the list and sorts them using
+	 * the built-in Arrays.sort(). Adds the sorted items to the end of the list 
+	 * after all non-integer Objects. O(n<sup>2</sup>)
+	 */
 	public void sortInts() {
 		ArrayList<Object> sorted = removeType(Integer.class);
 		sorted.sort(new compareInts());
 		addList(sorted);
 	}
-
+	
+	/** Extracts all Objects of type String from the list and sorts them using
+	 * the built-in Arrays.sort(). Adds the sorted items to the end of the list 
+	 * after all non-String Objects. O(n<sup>2</sup>)
+	 * @apiNote Sorts with compareToIgnoreCase().
+	 */
 	public void sortAlpha() {
 		ArrayList<Object> sorted = removeType(String.class);
 		sorted.sort(new compareStrings());
 		addList(sorted);
 	}
-
+	
+	/** Extracts all Objects of the given type from the list and sorts them using
+	 * the built-in Arrays.sort(). Adds the sorted items to the end of the list 
+	 * after all non-type Objects. O(n<sup>2</sup>)
+	 * @apiNote Requires a Comparator class which accepts any Object superclass.
+	 * To use with your own Objects, you must cast from Object to subclass.
+	 * @param typ The class used to determine what Objects are sortable.
+	 * @param c The Object comparator class used to sort the given type.
+	 */
 	public void sortType(Class<? extends Object> typ, Comparator<? super Object> c) {
 		ArrayList<Object> sorted = removeType(typ);
 		sorted.sort(c);
@@ -371,9 +384,11 @@ public class Plist {
 	}
 	
 	/** Removes all Objects of a given type from the list and returns an 
-	 * ArrayList populated with the items.
+	 * ArrayList populated with the items. O(n)
 	 * @param typ The class used to determine what Objects are removable.
-	 * @apiNote Does not test superclass, must match exactly.*/
+	 * @apiNote Does not test superclass, must match exactly.
+	 * @return ArrayList-Object
+	 */
 	public ArrayList<Object> removeType(Class<? extends Object> typ) {
 		if(len == 0) {
 			return null;

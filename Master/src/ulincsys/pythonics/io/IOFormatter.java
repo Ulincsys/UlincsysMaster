@@ -15,6 +15,7 @@ import java.util.Iterator;
  * @apiNote IO file set with "file=filename". Default, system.in/out
  * @apiNote Buffer flush set with "flush=boolean". Default true
  * @apiNote File append set with "append=boolean". Default true
+ * @author Ulincsys
  */
 public class IOFormatter {
 	private String end;

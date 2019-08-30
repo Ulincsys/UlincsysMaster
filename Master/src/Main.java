@@ -13,6 +13,7 @@ public class Main {
 		sortTest.add("This", "is", "a", "test", 57.999);
 		sortTest.read(10);
 		sortTest.sortAlpha();
+		sortTest.sortInts();
 		sortTest.read(10);
 	}
 
