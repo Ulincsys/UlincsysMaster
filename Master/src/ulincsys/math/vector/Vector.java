@@ -19,5 +19,3 @@ public class Vector {
 		this.directions = directions;
 	}
 }
-
-// this is a test
