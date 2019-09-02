@@ -1,4 +1,7 @@
 package ulincsys.pythonics;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import ulincsys.pythonics.io.IOFormatter;
 
 /** Contains various static methods to replace common Java syntax with Pythonic syntax
@@ -123,6 +126,10 @@ public class Util {
 			return false;
 		}
 		return false;
+	}
+	
+	public static int randInt(int min, int max) {
+		return ThreadLocalRandom.current().nextInt(min, max);
 	}
 }
 	
