@@ -26,6 +26,8 @@ public class Strings {
 		return Str(reverse.reverse());
 	}
 	
+	/** Takes any object and returns a randomized version of its Str() equivalent.
+	 */
 	public static String randomize(Object parse) {
 		StringBuilder result = new StringBuilder();
 		char[] letters = Str(parse).toCharArray();
@@ -45,7 +47,7 @@ public class Strings {
 			result.append(letter);
 		}
 		
-		return result.toString();
+		return Str(result);
 	}
 }
 
