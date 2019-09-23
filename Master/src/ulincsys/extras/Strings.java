@@ -49,6 +49,23 @@ public class Strings {
 		
 		return Str(result);
 	}
+	
+	/** Takes any object and returns a stripe cased version of its Str() equivalent.
+	 * Stripe cased meaning that every other character is capitalized if it's a letter.
+	 */
+	public static String stripeCase(String parse) {
+		StringBuilder striped = new StringBuilder();
+		
+		for(int i = 0; i < parse.length(); ++i) {
+			if((i % 2) == 0) {
+				striped.append(Str(parse.charAt(i)).toUpperCase());
+			} else {
+				striped.append(parse.charAt(i));
+			}
+		}
+		
+		return striped.toString();
+	}
 }
 
 

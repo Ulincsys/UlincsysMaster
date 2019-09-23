@@ -19,6 +19,7 @@ public class Util {
 	 * If you pass an IOFormatter into the print function and also pass in format options,
 	 * they will be ignored.
 	 * @param out An auto-generated Object array of parameters.
+	 * @apiNote Will <b>not</b> print null Objects.
 	 */
 	public static IOFormatter print(Object... out) {
 		IOFormatter format;
@@ -94,24 +95,43 @@ public class Util {
 	
 	/** Accepts any Object, and returns the Integer parse equivalent.
 	 * Will throw NumberFormatException if given Object cannot be cast to an Integer.
+	 * @apiNote Utilizes the Integer.parseInt() function, and as such cannot
+	 * accept any floating-point type representation. To cast from String(float)
+	 * to Integer, use tryInt().
 	 */
 	public static Integer Int(Object parse) {
 		return Integer.parseInt(Str(parse));
 	}
 	
+	/** Accepts any Object, and returns the Double parse equivalent.
+	 * Will throw NumberFormatException if given Object cannot be cast to a Double.
+	 */
+	public static Double Float(Object parse) {
+		return Double.parseDouble(Str(parse));
+	}
+	
 	/** Accepts any Object, and returns the Integer parse equivalent.
 	 * Will return null if given Object cannot be cast to an Integer.
+	 * @apiNote Will attempt to cast from String(float) representation
+	 * to Integer.
 	 */
 	public static Integer tryInt(Object parse) {
 		try {
 			return Int(parse);
-		} catch(Exception e) {
+		} catch(NumberFormatException e) {
+			try {
+				return (int)((double)Float(parse));
+			} catch (Exception e1) {
+				return null;
+			}
+		} catch(Exception en) {
 			return null;
 		}
 	}
 	
 	/** Accepts any Object, and returns its truthiness.
-	 * Returns true if Object is truthy (containing "true, yes, y or 1")
+	 * Returns true if Object is truthy (containing "true, yes, y or 1"),
+	 * or else returns false if the Object is falsy or null.
 	 */
 	public static Boolean bool(Object parse) {
 		try {
@@ -128,12 +148,68 @@ public class Util {
 		return false;
 	}
 	
+	/** Returns a random integer value between INT_MIN and INT_MAX, 
+	 * using randInt(min, max).
+	 */
+	public static int randInt() {
+		return randInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+	}
+	
+	/** Returns a random Integer with a range from 
+	 * and including min, to and excluding max. 
+	 * Uses ThreadLocalRandom.
+	 */
 	public static int randInt(int min, int max) {
 		return ThreadLocalRandom.current().nextInt(min, max);
 	}
+	
+	/** Returns a random double value between DOUBLE_MIN and DOUBLE_MAX, 
+	 * using randFloat(min, max).
+	 */
+	public static double randFloat() {
+		return randFloat(Double.MIN_VALUE, Double.MAX_VALUE);
+	}
+	
+	/** Returns a random Double with a range from 
+	 * and including min, to and excluding max. 
+	 * Uses ThreadLocalRandom.
+	 */
+	public static double randFloat(double min, double max) {
+		return ThreadLocalRandom.current().nextDouble(min, max);
+	}
+	
+	/** Returns a random character generated using randInt(), with a
+	 * range from and including 32, to and excluding 127.
+	 * @apiNote This function returns an ASCII character between
+	 * #32 (space) and #126 (~).
+	 */
+	public static char randChar() {
+		return randChar(32, 127);
+	}
+	
+	/** Returns a random character generated using randInt(), with a
+	 * range from and including min, to and excluding max.
+	 */
+	public static char randChar(int min, int max) {
+		return (char)randInt(min, max);
+	}
+	
+	/** Returns a random character between A and z. 
+	 * Uses randBool() to determine whether result is lowercase or uppercase.*/
+	public static char randAlpha() {
+		if(randBool()) {
+			return randChar(65, 91);
+		} else {
+			return randChar(97, 123);
+		}
+	}
+	
+	/** Returns a random boolean value from ThreadLocalRandom.
+	 */
+	public static boolean randBool() {
+		return ThreadLocalRandom.current().nextBoolean();
+	}
 }
-	
-	
 	
 	
 	
