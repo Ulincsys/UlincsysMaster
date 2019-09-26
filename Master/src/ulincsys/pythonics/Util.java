@@ -147,68 +147,6 @@ public class Util {
 		}
 		return false;
 	}
-	
-	/** Returns a random integer value between INT_MIN and INT_MAX, 
-	 * using randInt(min, max).
-	 */
-	public static int randInt() {
-		return randInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
-	}
-	
-	/** Returns a random Integer with a range from 
-	 * and including min, to and excluding max. 
-	 * Uses ThreadLocalRandom.
-	 */
-	public static int randInt(int min, int max) {
-		return ThreadLocalRandom.current().nextInt(min, max);
-	}
-	
-	/** Returns a random double value between DOUBLE_MIN and DOUBLE_MAX, 
-	 * using randFloat(min, max).
-	 */
-	public static double randFloat() {
-		return randFloat(Double.MIN_VALUE, Double.MAX_VALUE);
-	}
-	
-	/** Returns a random Double with a range from 
-	 * and including min, to and excluding max. 
-	 * Uses ThreadLocalRandom.
-	 */
-	public static double randFloat(double min, double max) {
-		return ThreadLocalRandom.current().nextDouble(min, max);
-	}
-	
-	/** Returns a random character generated using randInt(), with a
-	 * range from and including 32, to and excluding 127.
-	 * @apiNote This function returns an ASCII character between
-	 * #32 (space) and #126 (~).
-	 */
-	public static char randChar() {
-		return randChar(32, 127);
-	}
-	
-	/** Returns a random character generated using randInt(), with a
-	 * range from and including min, to and excluding max.
-	 */
-	public static char randChar(int min, int max) {
-		return (char)randInt(min, max);
-	}
-	
-	/** Returns a random character between A and z. 
-	 * Uses randBool() to determine whether result is lowercase or uppercase.*/
-	public static char randAlpha() {
-		if(randBool()) {
-			return randChar(65, 91);
-		} else {
-			return randChar(97, 123);
-		}
-	}
-	
-	/** Returns a random boolean value from ThreadLocalRandom.
-	 */
-	public static boolean randBool() {
-		return ThreadLocalRandom.current().nextBoolean();
-	}
 }
 	
 	

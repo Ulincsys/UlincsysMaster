@@ -1,6 +1,7 @@
 package ulincsys.extras;
 
 import static ulincsys.pythonics.Util.*;
+import static ulincsys.extras.Randoms.*;
 
 /** Class containing many static methods for String decomposition and manipulation.
  * @author Ulincsys
