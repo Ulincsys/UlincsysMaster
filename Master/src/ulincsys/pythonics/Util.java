@@ -19,6 +19,7 @@ public class Util {
 	 * If you pass an IOFormatter into the print function and also pass in format options,
 	 * they will be ignored.
 	 * @param out An auto-generated Object array of parameters.
+	 * @apiNote Will <b>not</b> print null Objects.
 	 */
 	public static IOFormatter print(Object... out) {
 		IOFormatter format;
@@ -94,24 +95,43 @@ public class Util {
 	
 	/** Accepts any Object, and returns the Integer parse equivalent.
 	 * Will throw NumberFormatException if given Object cannot be cast to an Integer.
+	 * @apiNote Utilizes the Integer.parseInt() function, and as such cannot
+	 * accept any floating-point type representation. To cast from String(float)
+	 * to Integer, use tryInt().
 	 */
 	public static Integer Int(Object parse) {
 		return Integer.parseInt(Str(parse));
 	}
 	
+	/** Accepts any Object, and returns the Double parse equivalent.
+	 * Will throw NumberFormatException if given Object cannot be cast to a Double.
+	 */
+	public static Double Float(Object parse) {
+		return Double.parseDouble(Str(parse));
+	}
+	
 	/** Accepts any Object, and returns the Integer parse equivalent.
 	 * Will return null if given Object cannot be cast to an Integer.
+	 * @apiNote Will attempt to cast from String(float) representation
+	 * to Integer.
 	 */
 	public static Integer tryInt(Object parse) {
 		try {
 			return Int(parse);
-		} catch(Exception e) {
+		} catch(NumberFormatException e) {
+			try {
+				return (int)((double)Float(parse));
+			} catch (Exception e1) {
+				return null;
+			}
+		} catch(Exception en) {
 			return null;
 		}
 	}
 	
 	/** Accepts any Object, and returns its truthiness.
-	 * Returns true if Object is truthy (containing "true, yes, y or 1")
+	 * Returns true if Object is truthy (containing "true, yes, y or 1"),
+	 * or else returns false if the Object is falsy or null.
 	 */
 	public static Boolean bool(Object parse) {
 		try {
@@ -127,13 +147,7 @@ public class Util {
 		}
 		return false;
 	}
-	
-	public static int randInt(int min, int max) {
-		return ThreadLocalRandom.current().nextInt(min, max);
-	}
 }
-	
-	
 	
 	
 	
