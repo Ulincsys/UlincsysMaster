@@ -1,5 +1,5 @@
 package ulincsys.math;
 
-public class Symbols {
-
+public enum Symbols {
+	PI, E
 }

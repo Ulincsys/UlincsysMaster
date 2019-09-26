@@ -4,6 +4,7 @@ import java.math.*;
 public class Component {
 	private double part;
 	
+	
 	public Component() {
 		part = 0;
 	}
@@ -15,7 +16,7 @@ public class Component {
 	public Component(String part) {
 		if(part.contains("pi")) 
 			this.part = Math.PI;
-		else if(part.contains("_e"))
+		else if(part.contains("e"))
 			this.part = Math.E;
 	}
 	

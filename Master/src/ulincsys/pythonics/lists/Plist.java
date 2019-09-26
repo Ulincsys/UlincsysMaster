@@ -5,12 +5,13 @@ import static ulincsys.pythonics.Util.*;
 import static ulincsys.extras.Randoms.*;
 
 /**
-	* A typeless linked list with extended features.
+	* A typeless, doubly-traversable linked list with extended features.
 	* Supports random fill, sorting and printing.
 	* Returns data as typecast (Any)Object;
 	* @author Ulincsys
 	*/
-public class Plist {
+@SuppressWarnings("rawtypes")
+public class Plist implements List {
 	private Node head;
 	private Node tail;
 	private Node cursor;
@@ -61,19 +62,32 @@ public class Plist {
 	* Adds all items in given List of (k) length to list.
 	* Takes any List<Any>. O(K)
 	*/
-	public void addList(List items) {
-		for(Object item : items) {
-			add(item);
+	
+	@Override
+	public boolean addAll(Collection items) {
+		try {
+			for(Object item : items) {
+				add(item);
+			}
+		} catch (Exception e) {
+			return false;
 		}
+		return true;
 	}
 	
 	/**
-	* Adds item to end of list. Takes any (Object)data. O(1)
+	* Adds item to end of list. Takes any (Object)data with no restrictions. O(1)
 	*/
-	public void add(Object data) {
-		Node temp = new Node(tail.prev, tail, data);
-		temp.prev.next = tail.prev = temp;
-		++len;
+	@Override
+	public boolean add(Object data) {
+		try {
+			Node temp = new Node(tail.prev, tail, data);
+			temp.prev.next = tail.prev = temp;
+			++len;
+			return true;
+		} catch(Exception e) {
+			return false;
+		}
 	}
 
 	/**
@@ -89,7 +103,7 @@ public class Plist {
 	* Returns the item at given index as typecast (Any)Object. O(n)
 	*/
 	@SuppressWarnings("unchecked")
-	public <Any> Any get(int index) {
+	public <Any> Any at(int index) {
 		if(!checkIndex(index)) {
 			return null;
 		}
@@ -142,6 +156,10 @@ public class Plist {
 			return cursor;
 		}
 		return null;
+	}
+	
+	public Object current() {
+		return cursor.data;
 	}
 	
 	/**
@@ -228,6 +246,7 @@ public class Plist {
 		if(isEmpty()) {
 			return null;
 		}
+		
 		rewind();
 		
 		Object[] temp = new Object[len];
@@ -238,6 +257,21 @@ public class Plist {
 		
 		restore();
 		return temp;
+	}
+
+	@Override
+	public Object[] toArray(Object[] a) {
+		if(a.length >= len()) {
+			int i = 0;
+			
+			while(i < a.length) {
+				a[i] = current();
+				next();	++i;
+			}
+		} else {
+			return toArray();
+		}
+		return a;
 	}
 	
 	/**
@@ -285,14 +319,16 @@ public class Plist {
 	*/
 	public Object[] reset() {
 		Object[] temp = toArray();
-		drop();
+		clear();
 		return temp;
 	}
 
 	/**
 	* Removes all references to data items on list, and resets len(). O(1)
 	*/
-	public void drop() {
+	
+	@Override
+	public void clear() {
 		head.next = tail;
 		store = cursor = tail.prev = head;
 		len = 0;
@@ -348,6 +384,21 @@ public class Plist {
 		restore();
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder list = new StringBuilder();
+		rewind();
+		list.append("Plist with " + len + " items:\n");
+		do {
+			list.append("[ " + cursor.toString() + " ] ");
+		} while(next() != null);
+		
+		list.append("\n");
+		restore();
+		
+		return list.toString();
+	}
+	
 	/** Extracts all Objects of type Integer from the list and sorts them using
 	 * the built-in Arrays.sort(). Adds the sorted items to the end of the list 
 	 * after all non-integer Objects. O(n<sup>2</sup>)
@@ -355,7 +406,7 @@ public class Plist {
 	public void sortInts() {
 		ArrayList<Object> sorted = removeType(Integer.class);
 		sorted.sort(new compareInts());
-		addList(sorted);
+		addAll(sorted);
 	}
 	
 	/** Extracts all Objects of type String from the list and sorts them using
@@ -366,7 +417,7 @@ public class Plist {
 	public void sortAlpha() {
 		ArrayList<Object> sorted = removeType(String.class);
 		sorted.sort(new compareStrings());
-		addList(sorted);
+		addAll(sorted);
 	}
 	
 	/** Extracts all Objects of the given type from the list and sorts them using
@@ -380,7 +431,7 @@ public class Plist {
 	public void sortType(Class<? extends Object> typ, Comparator<? super Object> c) {
 		ArrayList<Object> sorted = removeType(typ);
 		sorted.sort(c);
-		addList(sorted);
+		addAll(sorted);
 	}
 	
 	/** Removes all Objects of a given type from the list and returns an 
@@ -409,6 +460,120 @@ public class Plist {
 		restore();
 		return removed;
 	}
+
+	@Override
+	public void add(int index, Object element) {
+		rewind();
+		int cursorIndex = 0;
+		
+		if(index > (len() - 1)) {
+			throw new IndexOutOfBoundsException();
+		}
+		
+		while(cursorIndex++ != index) {
+			next();
+		}
+		
+		
+	}
+
+	@Override
+	public boolean addAll(int index, Collection c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean contains(Object o) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean containsAll(Collection c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Object get(int index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int indexOf(Object o) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Iterator iterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int lastIndexOf(Object o) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public ListIterator listIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ListIterator listIterator(int index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean remove(Object o) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Object remove(int index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean removeAll(Collection c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean retainAll(Collection c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Object set(int index, Object element) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int size() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public List subList(int fromIndex, int toIndex) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	
 }
 
 
