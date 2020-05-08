@@ -1,8 +1,20 @@
 package ulincsys.pythonics.lists;
 
-import java.util.*;
-import static ulincsys.pythonics.Util.*;
-import static ulincsys.extras.Randoms.*;
+import static ulincsys.extras.Randoms.randInt;
+import static ulincsys.pythonics.Pythonics.Int;
+import static ulincsys.pythonics.Pythonics.Str;
+import static ulincsys.pythonics.Pythonics.print;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
+import ulincsys.pythonics.Pythonics;
 
 /**
 	* A typeless, doubly-traversable linked list with extended features.
@@ -11,44 +23,67 @@ import static ulincsys.extras.Randoms.*;
 	* @author Ulincsys
 	*/
 @SuppressWarnings("rawtypes")
-public class Plist implements List {
+public class Plist implements List, PythonicList {
+	private HashMap<String, Integer> database;
 	private Node head;
 	private Node tail;
 	private Node cursor;
 	private Node store;
 	private int len;
+	protected int index;
+	private int preIndex;
 	
 	/**
 	* Initializes empty plist. O(1)
 	*/
 	public Plist() {
-		head = new Node();
+		head = new Node(null, null, null);
 		tail = new Node(head, null, null);
 		head.next = tail;
 		store = cursor = head;
-		len = 0;
+		len = index = preIndex = 0;
+		database = new HashMap<String, Integer>();
 	}
 	
 	/**
 	* Initializes plist with the given number of (k) objects, or with an Object[] array of (k) objects. O(k)
 	*/
 	public Plist(Object... objects) {
-		head = new Node();
-		tail = new Node(head, null, null);
-		head.next = tail;
-		store = cursor = head;
-		len = 0;
+		this();
 		
 		for(Object item : objects) {
 			add(item);
 		}
 	}
 	
+	public void updateAdd(Object data) {
+		if(!database.containsKey(Pythonics.identityString(data))) {
+			database.put(Pythonics.identityString(data), Integer.valueOf(1));
+		} else {
+			database.put(Pythonics.identityString(data), database.get(Pythonics.identityString(data)) + 1);
+		}
+		++len;
+	}
+	
+	public void updateRem(Object data) {
+		if(database.containsKey(Pythonics.identityString(data))) {
+			if(!database.remove(Pythonics.identityString(data), 1)) {
+				database.put(Pythonics.identityString(data), database.get(Pythonics.identityString(data)) - 1);
+			}
+			--len;
+		}
+	}
+	
 	/**
 	* Returns the number of items contained within parent list. O(1)
 	*/
-	public int len() {
+	@Override
+	public int size() {
 		return len;
+	}
+	
+	public BigInteger len() {
+		return BigInteger.valueOf(size());
 	}
 
 	/**
@@ -59,8 +94,8 @@ public class Plist implements List {
 	}
 
 	/**
-	* Adds all items in given List of (k) length to list.
-	* Takes any List<Any>. O(K)
+	* Adds all items in given Collection of (k) length to list.
+	* Takes any Collection. O(K)
 	*/
 	
 	@Override
@@ -75,21 +110,86 @@ public class Plist implements List {
 		return true;
 	}
 	
+	protected void addNode(Node item) {
+		if(item == null) {
+			return;
+		}
+		
+		item.next = tail;
+		item.prev = tail.prev;
+		tail.prev.next = tail.prev = item;
+		
+		updateAdd(item.data);
+	}
+	
+	protected void addNodes(Node item) {
+		if(item == null) {
+			return;
+		}
+		
+		item.prev = tail.prev;
+		tail.prev.next = item;
+		
+		updateAdd(item.data);
+		
+		while(item.next != null) {
+			cursor = item;
+			item = item.next;
+			if(item.prev != cursor) {
+				item.prev = cursor;
+			}
+			updateAdd(item.data);
+		}
+		
+		tail.prev = item;
+		item.next = tail;
+	}
+	
 	/**
 	* Adds item to end of list. Takes any (Object)data with no restrictions. O(1)
 	*/
 	@Override
 	public boolean add(Object data) {
-		try {
-			Node temp = new Node(tail.prev, tail, data);
-			temp.prev.next = tail.prev = temp;
-			++len;
-			return true;
-		} catch(Exception e) {
+		if(isFull()) {
 			return false;
 		}
+		
+		Node temp = new Node(tail.prev, tail, data);
+		temp.prev.next = tail.prev = temp;
+		updateAdd(data);
+		return true;
+	}
+	
+	protected void addAtCursor(Object e) {
+		if(isFull() || e == this) {
+			return;
+		}
+		
+		Node temp = new Node(cursor, cursor.next, e);
+		
+		cursor.next = cursor.next.prev = temp;
+		
+		updateAdd(e); ++index;
 	}
 
+	@Override
+	public boolean addAll(int index, Collection c) {
+		if(!checkIndex(index) || c.contains(this) || willOverfill(c.size())) {
+			return false;
+		}
+		
+		Node temp = nodeAt(index);
+		
+		for(Object item : c) {
+			temp.prev.next = temp.prev = new Node(temp.prev, temp, item);
+			if(currentIndex() >= index) {
+				this.index++;
+			}
+			updateAdd(item);
+		}
+		return false;
+	}
+	
 	/**
 	* Adds all given (k) items to list. Takes any (Object)data. O(k)
 	*/
@@ -98,62 +198,196 @@ public class Plist implements List {
 			add(item);
 		}
 	}
+
+	@Override
+	public boolean contains(Object o) {
+		return database.containsKey(Pythonics.identityString(o));
+	}
+	
+	public boolean containsExactly(Object o) {
+		for(Object item : this) {
+			if(Pythonics.isEqual(item, o)) {
+				restore();
+				return true;
+			}
+		}
+		restore();
+		return false;
+	}
+
+	@Override
+	public boolean containsAll(Collection c) {
+		for(Object item : c) {
+			if(!contains(item)) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	public boolean containsAllExactly(Collection c) {
+		for(Object item : c) {
+			if(!containsExactly(item)) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
+	@Override
+	public Object get(int index) {
+		Node temp = nodeAt(index);
+		return (temp == null) ? temp : temp.data;
+	}
+	
+	@Override
+	public Object set(int index, Object element) {
+		if(index >= size()) {
+			return null;
+		}
+		
+		Node temp = nodeAt(index);
+		
+		updateRem(temp.data);
+		updateAdd(element);
+		
+		Object result = temp.data;
+		temp.data = element;
+		
+		return result;
+	}
 	
 	/**
 	* Returns the item at given index as typecast (Any)Object. O(n)
 	*/
-	@SuppressWarnings("unchecked")
 	public <Any> Any at(int index) {
 		if(!checkIndex(index)) {
 			return null;
 		}
+		
 		Node temp = nodeAt(index);
 		
-		Object ret = temp.data;
-		Class<? extends Object> dat = ret.getClass();
-		return (Any) dat.cast(ret);
+		return temp.cast();
+	}
+	
+	public <Any> Any getFirstInstance(Class<? extends Object> typ) {
+		rewind();
+		
+		while(!cursor.isType(typ) && hasNext()) {
+			next();
+		} if(!hasNext()) {
+			return null;
+		}
+		
+		Node temp = cursor;
+		restore();
+		
+		return temp.cast();
+	}
+	
+	public <Any> Any getLastInstance(Class<? extends Object> typ) {
+		unwind();
+		
+		while(!cursor.isType(typ) && hasPrev()) {
+			prev();
+		} if(!hasPrev()) {
+			return null;
+		}
+		
+		Node temp = cursor;
+		restore();
+		
+		return temp.cast();
+	}
+	
+	public boolean isFull() {
+		return len == Integer.MAX_VALUE;
+	}
+	
+	public boolean willOverfill(int length) {
+		return ((Integer.MAX_VALUE - length) < len);
 	}
 	
 	/**
 	* Resets list cursor to list head, stores previous location for restore(). O(1)
 	*/
-	public void rewind() {
+	protected void rewind() {
 		store = cursor;
-		if(isEmpty()) {
-			cursor = head;
-		} else {
-			cursor = head.next;
-		}
+		cursor = head.next;
+		preIndex = index;
+		index = 0;
+	}
+	
+	/**
+	* Resets list cursor to list tail, stores previous location for restore(). O(1)
+	*/
+	protected void unwind() {
+		store = cursor;
+		cursor = tail.prev;
+		preIndex = index;
+		index = size() - 1;
 	}
 	
 	/**
 	* Restores list cursor to previous location given by rewind(). O(1)
 	*/
-	public void restore() {
+	protected void restore() {
 		cursor = store;
+		index = preIndex;
 	}
 	
 	/**
 	* Returns false if cursor next Node is tail of list or null, else true. O(1)
 	*/
 	public boolean hasNext() {
-		return (cursor.next != tail && cursor.next != null) ? true : false;
+		return (cursor != tail || ((cursor == head) && (cursor.next != tail))) ? true : false;
 	}
 	
 	/**
 	* Returns false if cursor previous Node is head of list or null, else true. O(1)
 	*/
 	public boolean hasPrev() {
-		return (cursor.prev != head && cursor.prev != null) ? true : false;
+		return (cursor != head || ((cursor == tail) && (cursor.next != head))) ? true : false;
 	}
 	
 	/**
 	* Returns cursor next Node if hasNext(), else null. O(1)
 	*/
-	public Node next() {
+	protected Node next() {
 		if(hasNext()) {
 			cursor = cursor.next;
-			return cursor;
+			++index;
+			return cursor.prev;
+		}
+		return null;
+	}
+	
+	public <Any> Any getNext() {
+		if(hasNext()) {
+			return next().cast();
+		}
+		
+		return null;
+	}
+	
+	public <Any> Any getPrev() {
+		if(hasPrev()) {
+			return prev().cast();
+		}
+		
+		return null;
+	}
+	
+	/**
+	* Returns cursor previous Node if hasPrev(), else null. O(1)
+	*/
+	protected Node prev() {
+		if(hasPrev()) {
+			cursor = cursor.prev;
+			--index;
+			return cursor.next;
 		}
 		return null;
 	}
@@ -162,40 +396,29 @@ public class Plist implements List {
 		return cursor.data;
 	}
 	
-	/**
-	* Returns cursor previous Node if hasPrev(), else null. O(1)
-	*/
-	public Node prev() {
-		if(hasPrev()) {
-			cursor = cursor.prev;
-			return cursor;
-		}
-		return null;
+	protected int currentIndex() {
+		return index - 1;
 	}
 	
 	/**
 	* Removes Node at index and returns data as (Any)Object, else null. Invokes nodeAt(index). O(n)
 	*/
-	@SuppressWarnings("unchecked")
 	public <Any> Any rem(int index) {
 		if(!checkIndex(index)) {
 			return null;
 		}
 		Node temp = nodeAt(index);
-		Object ret = temp.data;
-		
+		updateRem(temp.data);
 		stripNode(temp);
-		--len;
 		
-		Class<? extends Object> dat = ret.getClass();
-		return (Any) dat.cast(ret);
+		return temp.cast();
 	}
 
 	/**
 	* Removes given node from its list unless it is immovable.
 	* Returns true if removal is successful, else false. O(1)
 	*/
-	public boolean stripNode(Node item) {
+	protected boolean stripNode(Node item) {
 		if(immovable(item)) {
 			return false;
 		}
@@ -206,7 +429,7 @@ public class Plist implements List {
 			}
 			if(next() == null) {
 				if(prev() == null) {
-					cursor = head;
+					rewind();
 				}
 			}
 		}
@@ -225,13 +448,22 @@ public class Plist implements List {
 		if(!checkIndex(index)) {
 			return null;
 		} else if(index < 0) {
-			index += len;
+			index += size();
 		}
-		rewind();
-		int i = 0;
+		int i;
 		
-		while(++i <= index) {
-			next();
+		if(index < size()/2) {
+			rewind();
+			i = 0;
+			while(++i <= index) {
+				next();
+			}
+		} else {
+			unwind();
+			i = size() - 1;
+			while(--i >= index) {
+				prev();
+			}
 		}
 		
 		Node temp = cursor;
@@ -249,9 +481,9 @@ public class Plist implements List {
 		
 		rewind();
 		
-		Object[] temp = new Object[len];
-		for(int i = 0; i < len; ++i) {
-			temp[i] = cursor.data;
+		Object[] temp = new Object[size()];
+		for(int i = 0; i < size(); ++i) {
+			temp[i] = current();
 			next();
 		}
 		
@@ -261,13 +493,14 @@ public class Plist implements List {
 
 	@Override
 	public Object[] toArray(Object[] a) {
-		if(a.length >= len()) {
+		if(a.length >= size()) {
 			int i = 0;
-			
+			rewind();
 			while(i < a.length) {
 				a[i] = current();
 				next();	++i;
 			}
+			restore();
 		} else {
 			return toArray();
 		}
@@ -278,7 +511,7 @@ public class Plist implements List {
 	* Swaps data items between two Nodes, given that neither of them are immovable() and that they are not the same Node.
 	* Returns false if the swap fails, or true if the swap succeeds. O(1)
 	*/
-	public boolean swap(Node one, Node two) {
+	protected boolean swap(Node one, Node two) {
 		if(immovable(one) || immovable(two) || one == two) {
 			return false;
 		}
@@ -292,9 +525,8 @@ public class Plist implements List {
 	* Returns true if the given Node is equal to this.head or this.tail.
 	* Returns true if the given Node has null next or previous Nodes, else false. O(1)
 	*/
-	public boolean immovable(Node test) {
-		return (test == head || test == tail ||
-		 test.next == null || test.prev == null) ? true : false;
+	protected boolean immovable(Node test) {
+		return (test == head || test == tail || test == null) ? true : false;
 	}
 	
 	/**
@@ -331,13 +563,14 @@ public class Plist implements List {
 	public void clear() {
 		head.next = tail;
 		store = cursor = tail.prev = head;
-		len = 0;
+		len = index = preIndex = 0;
+		database.clear();
 	}
 	
 	/**
 	* Returns false if the given index is greater than or equal to len(), or if len() + index is less than 0, else true. O(1)
 	*/
-	public boolean checkIndex(int index) {
+	protected boolean checkIndex(int index) {
 		if(index >= len) {
 			return false;
 		} else if((len + index) < 0) {
@@ -350,10 +583,12 @@ public class Plist implements List {
 	/**
 	* Adds given amount (k) of random numbers between 1 and 1000 to list. O(k)
 	*/
-	public void fill(int amt) {
+	public Plist fill(int amt) {
 		while(--amt >= 0) {
 			add(randInt(0, 1000));
 		}
+		
+		return this;
 	}
 	
 	/**
@@ -370,30 +605,33 @@ public class Plist implements List {
 	* @param breakLn Gives the length at which to insert newlines.
 	*/
 	public void read(int breakLn) {
-		int willBreak = 0;
-		rewind();
-		System.out.println("Plist with " + len + " items:");
-		do {
-			System.out.print("[ " + cursor.toString() + " ] ");
-			if((++willBreak % breakLn) == 0) {
-				System.out.println();
-			}
-		} while(next() != null);
-
-		System.out.println();
-		restore();
+		print(toString(breakLn));
 	}
 	
 	@Override
 	public String toString() {
-		StringBuilder list = new StringBuilder();
-		rewind();
-		list.append("Plist with " + len + " items:\n");
-		do {
-			list.append("[ " + cursor.toString() + " ] ");
-		} while(next() != null);
+		return toString(-1);
+	}
+	
+	public String toString(int breakLn) {
+		if(breakLn <= 0) {
+			breakLn = Integer.MAX_VALUE;
+		}
+		StringBuilder list = new StringBuilder("Plist with " + size() + " items:\n");
 		
-		list.append("\n");
+		if(size() == 0) {
+			return list.append("[ ]").toString();
+		}
+		
+		rewind();
+		
+		HashMap<Node, Object> nodes = new HashMap<>();
+		
+		nodes.put(null, null);
+		nodes.put(tail, null);
+		
+		list.append(cursor.toStringFromNext(nodes, (long)breakLn)).append("\n");
+		
 		restore();
 		
 		return list.toString();
@@ -440,20 +678,21 @@ public class Plist implements List {
 	 * @apiNote Does not test superclass, must match exactly.
 	 * @return ArrayList-Object
 	 */
-	public ArrayList<Object> removeType(Class<? extends Object> typ) {
-		if(len == 0) {
+	@SuppressWarnings("unchecked")
+	public <T> ArrayList<T> removeType(Class<? extends Object> typ) {
+		if(size() == 0) {
 			return null;
 		}
 		
-		ArrayList<Object> removed = new ArrayList<Object>();
+		ArrayList<T> removed = new ArrayList<T>();
 		rewind();
-		while(cursor != tail) {
+		while(hasNext()) {
 			if(cursor.getType() == typ) {
-				removed.add(cursor.data);
+				removed.add((T)cursor.data);
 				stripNode(cursor);
-				--len;
+				updateRem(cursor.data);
 			} else {
-				cursor = cursor.next;
+				next();
 			}
 		}
 		
@@ -463,113 +702,194 @@ public class Plist implements List {
 
 	@Override
 	public void add(int index, Object element) {
+		if(!checkIndex(index) || element == this) {
+			return;
+		}
+		Node temp = nodeAt(index);
+		
+		Node added = new Node(temp.prev, temp, element);
+		
+		temp.prev.next = temp.prev = added;
+		
+		updateAdd(element);
+	}
+	
+	public void cursorTo(int index) {
 		rewind();
-		int cursorIndex = 0;
+		cursor = nodeAt(index);
+		this.index = index;
+	}
+	
+	@Override
+	public Plist clone() {
+		Plist temp = new Plist();
 		
-		if(index > (len() - 1)) {
-			throw new IndexOutOfBoundsException();
+		rewind();
+		
+		while(hasNext()) {
+			temp.add(getNext());
 		}
 		
-		while(cursorIndex++ != index) {
-			next();
+		return temp;
+	}
+	
+	public Node[] drop() {
+		if(isEmpty()) {
+			return null;
 		}
 		
+		Node[] Nodes = new Node[2];
 		
+		Nodes[0] = head.next;
+		Nodes[0].prev = null;
+		Nodes[1] = tail.prev;
+		Nodes[1].next = null;
+		
+		clear();
+		
+		return Nodes;
 	}
-
-	@Override
-	public boolean addAll(int index, Collection c) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean contains(Object o) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean containsAll(Collection c) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Object get(int index) {
-		// TODO Auto-generated method stub
-		return null;
+	
+	protected Node cursor() {
+		if(size() < 1) {
+			return null;
+		} else if(!hasPrev()) {
+			return head.next;
+		} else if(!hasNext()) {
+			return tail.prev;
+		}
+		return cursor;
 	}
 
 	@Override
 	public int indexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		for(Object item : this) {
+			if(Pythonics.isEqual(item, o)) {
+				return currentIndex();
+			}
+		}
+		return -1;
 	}
 
 	@Override
 	public Iterator iterator() {
-		// TODO Auto-generated method stub
-		return null;
+		rewind();
+		return new Pliterator(this);
 	}
 
 	@Override
 	public int lastIndexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		unwind();
+		
+		while(hasPrev()) {
+			if(Pythonics.isEqual(getPrev(), o)) {
+				restore();
+				return currentIndex();
+			}
+		}
+		restore();
+		return -1;
 	}
 
 	@Override
 	public ListIterator listIterator() {
-		// TODO Auto-generated method stub
-		return null;
+		rewind();
+		return new PlistIterator(this);
 	}
 
 	@Override
 	public ListIterator listIterator(int index) {
-		// TODO Auto-generated method stub
-		return null;
+		if(!checkIndex(index)) {
+			return null;
+		}
+		cursorTo(index);
+		
+		return new PlistIterator(this);
 	}
 
 	@Override
 	public boolean remove(Object o) {
-		// TODO Auto-generated method stub
+		if(isFull()) {
+			return false;
+		}
+		rewind();
+		
+		while(hasNext()) {
+			if(cursor().equals(o)) {
+				stripNode(cursor());
+				updateRem(cursor.data);
+				return true;
+			}
+			next();
+		}
 		return false;
 	}
 
 	@Override
 	public Object remove(int index) {
-		// TODO Auto-generated method stub
-		return null;
+		if(index >= size()) {
+			return null;
+		}
+		Node temp = nodeAt(index);
+		stripNode(temp);
+		updateRem(temp.data);
+		return temp.data;
 	}
 
 	@Override
 	public boolean removeAll(Collection c) {
-		// TODO Auto-generated method stub
-		return false;
+		boolean changed = false;
+		if(size() == 0) {
+			return changed;
+		}
+		rewind();
+		
+		while(hasNext()) {
+			if(c.contains(cursor().data)) {
+				if(stripNode(cursor())) {
+					updateRem(cursor().data);
+					changed = true;
+				}
+			} else {
+				next();
+			}
+		}
+		return changed;
 	}
 
 	@Override
 	public boolean retainAll(Collection c) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Object set(int index, Object element) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int size() {
-		// TODO Auto-generated method stub
-		return 0;
+		boolean changed = false;
+		if(size() == 0) {
+			return changed;
+		}
+		rewind();
+		
+		while(hasNext()) {
+			if(!c.contains(cursor().data)) {
+				stripNode(cursor());
+				updateRem(cursor().data);
+				System.out.println((cursor == head) + ", " + (cursor == tail));
+				changed = true;
+			} else {
+				next();
+			}
+		}
+		return changed;
 	}
 
 	@Override
 	public List subList(int fromIndex, int toIndex) {
-		// TODO Auto-generated method stub
+		if(checkIndex(fromIndex) && checkIndex(toIndex) && (fromIndex <= toIndex)) {
+			Plist sublist = new Plist();
+			cursorTo(fromIndex);
+			toIndex -= fromIndex;
+			while(--toIndex >= 0) {
+				sublist.add(next().data);
+			}
+			restore();
+			return sublist;
+		}
 		return null;
 	}
 	
@@ -594,6 +914,87 @@ class compareStrings implements Comparator<Object> {
 	public int compare(Object a, Object b) {
 		return Str(a).compareToIgnoreCase(Str(b));
 	}
+}
+
+@SuppressWarnings("rawtypes")
+class Pliterator implements Iterator {
+	Plist data;
+	
+	Pliterator(Plist data) {
+		this.data = data;
+	}
+	
+	@Override
+	public boolean hasNext() {
+		return data.hasNext();
+	}
+
+	@Override
+	public Object next() {
+		return data.next().cast();
+	}
+	
+}
+
+@SuppressWarnings("rawtypes")
+class PlistIterator implements ListIterator {
+	Plist data;
+	
+	PlistIterator(Plist data) {
+		this.data = data;
+	}
+	
+	@Override
+	public boolean hasNext() {
+		return data.hasNext();
+	}
+
+	@Override
+	public Object next() {
+		return data.next().cast();
+	}
+
+	@Override
+	public boolean hasPrevious() {
+		return data.hasPrev();
+	}
+
+	@Override
+	public Object previous() {
+		return data.prev().cast();
+	}
+
+	@Override
+	public int nextIndex() {
+		return (hasNext()) ? data.currentIndex() + 1 : -1;
+	}
+
+	@Override
+	public int previousIndex() {
+		return data.currentIndex() - 1;
+	}
+
+	@Override
+	public void remove() {
+		data.stripNode(data.cursor());
+	}
+
+	@Override
+	public void set(Object e) {
+		if(data.cursor() != null) {
+			data.stripNode(data.cursor());
+		}
+	}
+
+	@Override
+	public void add(Object e) {
+		if(data.size() == 0) {
+			data.add(e);
+		} else {
+			data.addAtCursor(e);
+		}
+	}
+	
 }
 
 

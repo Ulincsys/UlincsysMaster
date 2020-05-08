@@ -1,7 +1,15 @@
 package ulincsys.pythonics.io;
 
-import static ulincsys.pythonics.Util.*;
-import java.io.*;
+import static ulincsys.pythonics.Pythonics.Str;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -27,6 +35,7 @@ public class IOFormatter {
 	private File file;
 	private boolean flushed;
 	private boolean append;
+	private boolean standard;
 	private Object[] outBuffer;
 	private ArrayList<String> inBuffer;
 	
@@ -53,7 +62,7 @@ public class IOFormatter {
 		this.append = append;
 		this.end = end;
 		
-		makeFile();
+		standard = makeFile();
 	}
 	
 	/** IOFormatter initialized with Object[] array. Will search the last 5
@@ -89,6 +98,10 @@ public class IOFormatter {
 		}
 	}
 	
+	public static IOFormatter valueOf(Object... parse) {
+		return new IOFormatter(parse);
+	}
+	
 	// initializer, calls makeStandard and assumes all default values
 	private void init() {
 		inBuffer = new ArrayList<String>();
@@ -109,6 +122,7 @@ public class IOFormatter {
 			}
 			fileOut = new BufferedWriter(new FileWriter(file, append));
 			fileIn = new BufferedReader(new FileReader(file));
+			standard = false;
 			return true;
 		} catch (Exception e) {
 			makeStandard();
@@ -118,6 +132,7 @@ public class IOFormatter {
 	
 	// initializes the buffered IO streams for this print formatter to standard IO.
 	private void makeStandard() {
+		standard = true;
 		filename = null;
 		fileOut = new BufferedWriter(new OutputStreamWriter(System.out));
 		fileIn = new BufferedReader(new InputStreamReader(System.in));
@@ -149,6 +164,18 @@ public class IOFormatter {
 		}
 	}
 	
+	public void writeLines(ArrayList<String> out) {
+		boolean didFlush = flushed;
+		flushed = false;
+		
+		for(String line : out) {
+			writeLine(line);
+		}
+		
+		flushed = didFlush;
+		tryFlush();
+	}
+	
 	/** Reads the next line from the bufferedReader initialized in this IOFormatter.
 	 * Returns null if there is no next line, or if the read failed for another reason.
 	 */
@@ -170,6 +197,12 @@ public class IOFormatter {
 	 * @apiNote Any line containing the escape sequence will NOT be recorded in the inBuffer.
 	 */
 	public ArrayList<String> readLines() {
+		if(standard && escapeSequence.contains("_EOF")) {
+			writeLine("Warning: You are reading continuously from standard in!\n"
+					+ "To break out of continuous reading, enter the escape sequence "
+					+ "'_EOF'. To disable this warning, use setEscapeSequence() to "
+					+ "change the default escapeSequence character sequence.");
+		}
 		String buffer;
 		try {
 			Iterator<String> lines = fileIn.lines().iterator();
@@ -297,6 +330,10 @@ public class IOFormatter {
 
 	public void setEscapeSequence(String escapeSequence) {
 		this.escapeSequence = escapeSequence;
+	}
+	
+	public boolean isStandard() {
+		return standard;
 	}
 
 }
