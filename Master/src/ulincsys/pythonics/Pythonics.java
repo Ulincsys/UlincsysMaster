@@ -132,8 +132,7 @@ public class Pythonics {
 	 */
 	public static boolean isEqual(Object a, Object b) {
 		return ((System.identityHashCode(a) == System.identityHashCode(b)) || 
-				((a == null) ? b == null : a.equals(b)) || 
-				((b == null) ? a == null : b.equals(a)) ||
+				((a == null) ? b == null : a.equals(b)) ||
 				(cast(b) == cast(a))); 
 	}
 	
