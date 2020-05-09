@@ -1,10 +1,13 @@
 package ulincsys.time;
 
+import java.math.BigInteger;
+
 public class Duration {
-	private long length;
-	private boolean isAbsolute;
+	private BigInteger length;
 	private boolean isLocal;
-	private int tickTime = 1000;
+	private long tickTime = 1000;
+	
+	/* Constructors ----------------------------------------------------*/
 	
 	public Duration() {
 		this(0, false);
@@ -14,21 +17,31 @@ public class Duration {
 		this(length, false);
 	}
 	
-	public Duration(boolean isAbsolute) {
-		this(0, isAbsolute);
+	public Duration(BigInteger length) {
+		this(length, false);
 	}
 	
-	public Duration(long length, boolean isAbsolute) {
-		this.length = length;
-		this.isAbsolute = isAbsolute;
+	public Duration(boolean isLocal) {
+		this(0, isLocal);
 	}
+	
+	public Duration(long length, boolean isLocal) {
+		this(BigInteger.valueOf(length), isLocal);
+	}
+	
+	public Duration(BigInteger length, boolean isLocal) {
+		this.length = length;
+		this.isLocal = isLocal;
+	}
+	
+	/* Methods ------------------------------------------------------------*/
 	
 	public java.time.Duration asJavaTime() {
-		return java.time.Duration.ofMillis(length);
+		return java.time.Duration.ofMillis(length.longValue());
 	}
 	
 	public void addMillis(long milliseconds) {
-		length += milliseconds;
+		length.add(BigInteger.valueOf(milliseconds));
 	}
 	
 	public void addSecs(long seconds) {
@@ -76,15 +89,41 @@ public class Duration {
 	}
 	
 	public void tick() {
-		length += tickTime;
+		length.add(BigInteger.valueOf(tickTime));
 	}
 	
-	public long get() {
-		if(isAbsolute && length < 0) {
-			return -1 * length;
-		} else {
-			return length;
-		}
+	public void add(Duration duration) {
+		length.add(duration.getLength());
+	}
+	
+	/* Getters and Setters ---------------------------------------------------------*/
+
+	public boolean isLocal() {
+		return isLocal;
+	}
+
+	public void setLocal(boolean isLocal) {
+		this.isLocal = isLocal;
+	}
+	
+	public BigInteger getLength() {
+		return length;
+	}
+	
+	public BigInteger getAbsoluteLength() {
+		return length.abs();
+	}
+
+	public void setLength(BigInteger length) {
+		this.length = length;
+	}
+
+	public long getTickTime() {
+		return tickTime;
+	}
+
+	public void setTickTime(int tickTime) {
+		this.tickTime = tickTime;
 	}
 }
 
